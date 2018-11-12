@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "290056901977",
+    "firebase_url": "https://image-uploading-applicat-fead2.firebaseio.com",
+    "project_id": "image-uploading-applicat-fead2",
+    "storage_bucket": "image-uploading-applicat-fead2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:290056901977:android:e010a83b2fb48032",
+        "android_client_info": {
+          "package_name": "com.example.sayar.imageuploadingapplication"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "290056901977-d5fp2kb75dumq6oaj4a502qqjjfeegmk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzJYEwGY21N5Z-laVu2qe4vq3s8r9v8BE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
