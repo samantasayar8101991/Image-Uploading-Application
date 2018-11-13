@@ -34,7 +34,10 @@ dependencies {
     annotationProcessor 'com.github.bumptech.glide:compiler:4.0.0-RC1'
     implementation 'com.kishan.askpermission:askpermission:1.0.3'
     implementation 'com.commit451:PhotoView:1.2.4'
+    implementation 'com.flipboard:bottomsheet-core:1.5.3'
+    implementation 'com.flipboard:bottomsheet-commons:1.5.3'
     implementation 'com.squareup.okhttp3:okhttp:3.8.1'
+    implementation 'org.greenrobot:eventbus:3.0.0'
 
 
 }

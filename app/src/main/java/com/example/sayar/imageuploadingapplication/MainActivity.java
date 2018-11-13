@@ -7,22 +7,29 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.flipboard.bottomsheet.BottomSheetLayout;
+import com.flipboard.bottomsheet.commons.MenuSheetView;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DatabaseReference;
@@ -45,16 +52,14 @@ import java.util.List;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements PermissionCallback, ErrorCallback {
-    private Button gallery, btnUpload,camera,showingList;
+    private Button selectFile, btnUpload,showingList;
     private ImageView imageView;
     EditText editText;
     private DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private Uri filePath;
     FirebaseStorage storage;
     StorageReference storageReference;
-    private ArrayList<String> list =new ArrayList<>();
     private final int PICK_IMAGE_REQUEST = 71;
-    String listOfUrls;
     List<ImageUrl> uploadList;
     private Uri picUri;
     int PIC_CROP=0;
@@ -63,30 +68,23 @@ public class MainActivity extends AppCompatActivity implements PermissionCallbac
     final int RC_TAKE_PHOTO = 1;
     String name;
     private static final int PICKFILE_REQUEST_CODE = 1234;
+    BottomSheetLayout bottomSheet;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
-        gallery = (Button) findViewById(R.id.btnGallery);
         btnUpload = (Button) findViewById(R.id.btnUpload);
         imageView = (ImageView) findViewById(R.id.imgView);
         editText=findViewById(R.id.imagename);
-        camera=findViewById(R.id.btnCamera);
         showingList=findViewById(R.id.showList);
-
+        bottomSheet= (BottomSheetLayout) findViewById(R.id.bottomsheet);
         storage = FirebaseStorage.getInstance();
         storageReference = storage.getReference();
-
+        selectFile=findViewById(R.id.chooseFile);
         storageReference.child("images");
 
-        gallery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                chooseImage();
-            }
-        });
 
         btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -94,17 +92,6 @@ public class MainActivity extends AppCompatActivity implements PermissionCallbac
                 uploadImage();
             }
         });
-
-        camera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                galleryImage=2;
-                reqPermissionCamera();
-
-            }
-        });
-
         showingList.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -113,6 +100,39 @@ public class MainActivity extends AppCompatActivity implements PermissionCallbac
             }
         });
         uploadList = new ArrayList<>();
+
+        selectFile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                View view = MainActivity.this.getCurrentFocus();
+                if (view != null) {
+                    InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                }
+                MenuSheetView menuSheetView =
+                        new MenuSheetView(MainActivity.this, MenuSheetView.MenuType.LIST, "Choose...", new MenuSheetView.OnMenuItemClickListener() {
+                            @Override
+                            public boolean onMenuItemClick(MenuItem item) {
+                                if (bottomSheet.isSheetShowing()) {
+                                    bottomSheet.dismissSheet();
+                                }
+                                if (item.getItemId()==R.id.imageGalley){
+                                    chooseImage();
+                                    return true;
+                                }
+                                else if (item.getItemId()==R.id.camera){
+                                    galleryImage=2;
+                                    reqPermissionCamera();
+                                    return true;
+                                }return true;
+                            }
+                        });
+                menuSheetView.inflateMenu(R.menu.navigation);
+                bottomSheet.showWithSheetView(menuSheetView);
+
+
+            }
+        });
 
     }
 
@@ -127,7 +147,8 @@ public class MainActivity extends AppCompatActivity implements PermissionCallbac
             Log.d("filePath",filePath.toString());
             try {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), filePath);
-                imageView.setImageBitmap(bitmap);
+                Glide.with(this).load(filePath).into(imageView);
+                //imageView.setImageBitmap(bitmap);
             }
             catch (IOException e)
             {
@@ -202,43 +223,54 @@ public class MainActivity extends AppCompatActivity implements PermissionCallbac
                     Toast.makeText(MainActivity.this, "please provide name", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                final ProgressDialog progressDialog = new ProgressDialog(this);
-                progressDialog.setTitle("Uploading...");
-                progressDialog.show();
+                if (InternetConnection.checkConnection(MainActivity.this)) {
+                    // Its Available...
+                    final ProgressDialog progressDialog = new ProgressDialog(this);
+                    progressDialog.setTitle("Uploading...");
+                    progressDialog.show();
 
-                StorageReference ref = storageReference.child("images/" + UUID.randomUUID().toString());
-                ref.putFile(filePath)
-                        .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                            @Override
-                            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                                progressDialog.dismiss();
+                    StorageReference ref = storageReference.child("images/" + UUID.randomUUID().toString());
+                    ref.putFile(filePath)
+                            .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                                @Override
+                                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                                    progressDialog.dismiss();
 
-                                Log.d("name", "name");
-                                Uri downloadUri = taskSnapshot.getMetadata().getDownloadUrl();
-                                String url = downloadUri.toString();
-                                writeNewImageInfoToDB(url, name);
-                                Log.d("url", url);
-                                list.add(url);
-                                Log.d("listOfUrls", list.toString());
-                                Toast.makeText(MainActivity.this, "Uploaded", Toast.LENGTH_SHORT).show();
-                                ;
-                            }
-                        })
-                        .addOnFailureListener(new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                progressDialog.dismiss();
-                                Toast.makeText(MainActivity.this, "Failed " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        })
-                        .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-                            @Override
-                            public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                                double progress = (100.0 * taskSnapshot.getBytesTransferred() / taskSnapshot
-                                        .getTotalByteCount());
-                                progressDialog.setMessage("Uploaded " + (int) progress + "%");
-                            }
-                        });
+                                    Log.d("name", "name");
+                                    Uri downloadUri = taskSnapshot.getMetadata().getDownloadUrl();
+                                    String url = downloadUri.toString();
+                                    writeNewImageInfoToDB(url, name);
+                                    Toast.makeText(MainActivity.this, "Uploaded", Toast.LENGTH_SHORT).show();
+                                    Intent intent=new Intent(MainActivity.this,MainActivity.class);
+                                    startActivity(intent);
+
+
+                                }
+                            })
+                            .addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    progressDialog.dismiss();
+                                    Toast.makeText(MainActivity.this, "Failed " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                }
+                            })
+                            .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                                @Override
+                                public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                                    double progress = (100.0 * taskSnapshot.getBytesTransferred() / taskSnapshot
+                                            .getTotalByteCount());
+                                    progressDialog.setMessage("Uploaded " + (int) progress + "%");
+                                }
+                            });
+                } else {
+                    // Not Available...
+
+                    Toast.makeText(this, "please check your internet connection!", Toast.LENGTH_SHORT).show();
+
+                }
+
+
+
             }
         }catch (NullPointerException e){
             e.printStackTrace();
@@ -328,6 +360,29 @@ public class MainActivity extends AppCompatActivity implements PermissionCallbac
 
         return mediaFile;
     }
+    public static class InternetConnection {
+
+        /** CHECK WHETHER INTERNET CONNECTION IS AVAILABLE OR NOT */
+        static boolean checkConnection(Context context) {
+            final ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+            NetworkInfo activeNetworkInfo = connMgr.getActiveNetworkInfo();
+
+            if (activeNetworkInfo != null) { // connected to the internet
+                //Toast.makeText(context, activeNetworkInfo.getTypeName(), Toast.LENGTH_SHORT).show();
+
+                if (activeNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
+                    // connected to wifi
+                    return true;
+                } else if (activeNetworkInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
+                    // connected to the mobile provider's data plan
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
         }
 
 

@@ -53,7 +53,7 @@
             <uk.co.senab.photoview.PhotoView
                 android:id="@+id/fullImage"
                 android:layout_width="match_parent"
-                android:layout_height="350dp"
+                android:layout_height="wrap_content"
                 android:layout_marginLeft="8dp"
                 android:visibility="gone"
                 android:scaleType="centerCrop"/>
