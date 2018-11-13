@@ -20,6 +20,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -36,6 +37,7 @@ public class ShowingList extends AppCompatActivity {
     List<ImageUrl> uploadList=new ArrayList<>();
     PhotoViewAttacher pAttacher;
     ProgressBar progressBar;
+    RequestOptions requestOptions;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,10 +50,14 @@ public class ShowingList extends AppCompatActivity {
         getSupportActionBar().setTitle(getString(R.string.upload_image)); // for set actionbar title
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         progressBar=findViewById(R.id.progressbar);
+        progressBar.setVisibility(View.VISIBLE);
+        requestOptions= new RequestOptions();
+        requestOptions.placeholder(R.drawable.ic_landscape_black_24dp);
+        requestOptions.error(R.drawable.ic_error_black_24dp);
         mDatabaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                progressBar.setVisibility(View.VISIBLE);
+
                 for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                     ImageUrl upload = postSnapshot.getValue(ImageUrl.class);
                     uploadList.add(upload);
@@ -121,9 +127,10 @@ public class ShowingList extends AppCompatActivity {
 
             ImageUrl imageUrl=imageUrlArrayList.get(position);
             holder.name.setText(imageUrl.getName());
-            //Glide.with(context).load(imageUrl.getDownloadUrl()).into(holder.imageView);
-            Glide.with(context).load(imageUrl.getDownloadUrl()).apply(RequestOptions.circleCropTransform()).into(holder.imageView);
+            Glide.with(context).load(imageUrl.getDownloadUrl()).apply(requestOptions).apply(RequestOptions.circleCropTransform()).into(holder.imageView);
+            //Glide.with(context).load(imageUrl.getDownloadUrl()).apply(RequestOptions.circleCropTransform()).into(holder.imageView);
             Glide.with(context).load(imageUrl.getDownloadUrl()).into(holder.fullImageView);
+
             pAttacher = new PhotoViewAttacher(holder.fullImageView);
             pAttacher.update();
             holder.relativeLayout.setOnClickListener(new View.OnClickListener() {
